@@ -1,51 +1,45 @@
 package com.gustavo.consultorio.controller;
 
 import com.gustavo.consultorio.entity.ConsultaEntity;
-import com.gustavo.consultorio.repository.ConsultaRepository;
+import com.gustavo.consultorio.service.ConsultaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/consultas")
 public class ConsultaController {
 
     @Autowired
-    private ConsultaRepository consultaRepository;
+    private ConsultaService consultaService;
 
     @PostMapping
     public ConsultaEntity criarConsulta(@RequestBody ConsultaEntity novaConsulta) {
-        return consultaRepository.save(novaConsulta);
+        return consultaService.salvarConsulta(novaConsulta);
     }
 
-    @PutMapping("{id}")
-    public ConsultaEntity atualizarConsulta(@PathVariable Long id,
-                                            @RequestBody ConsultaEntity consultaAtualizada) {
-        ConsultaEntity consulta = consultaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nao encontramos esse id"));
+    @PutMapping("/{id}")
+    public ConsultaEntity atualizarConsulta(
+            @PathVariable Long id,
+            @RequestBody ConsultaEntity consultaAtualizada) {
 
-        consulta.setCliente(consultaAtualizada.getCliente());
-        consulta.setMedico(consultaAtualizada.getMedico());
-        consulta.setHoraData(consultaAtualizada.getHoraData());
-        consulta.setSala(consultaAtualizada.getSala());
-
-        return consultaRepository.save(consulta);
+        return consultaService.atualizarConsulta(id, consultaAtualizada);
     }
 
     @GetMapping
     public List<ConsultaEntity> listarTodas() {
-        return consultaRepository.findAll();
+        return consultaService.listarTodas();
     }
 
-    @GetMapping("{id}")
-    public ConsultaEntity buscarPorId(@PathVariable Long id) {
-        return consultaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Consulta nao encontrada"));
+    @GetMapping("/{id}")
+    public Optional<ConsultaEntity> buscarPorId(@PathVariable Long id) {
+        return consultaService.buscarPorId(id);
     }
 
-    @DeleteMapping("{id}")
+    @DeleteMapping("/{id}")
     public void deletarConsulta(@PathVariable Long id) {
-        consultaRepository.deleteById(id);
+        consultaService.deletarConsulta(id);
     }
 }
