@@ -1,8 +1,7 @@
 package com.gustavo.consultorio.controller;
 
-
 import com.gustavo.consultorio.entity.PacienteEntity;
-import com.gustavo.consultorio.repository.PacienteRepository;
+import com.gustavo.consultorio.service.PacienteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,48 +10,34 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/pacientes")
-
 public class PacienteController {
 
     @Autowired
-    private PacienteRepository pacienteRepository;
+    private PacienteService pacienteService;
 
-    //cria paciente
     @PostMapping
     public PacienteEntity criarPaciente(@RequestBody PacienteEntity paciente) {
-        return pacienteRepository.save(paciente);
+        return pacienteService.criarPaciente(paciente);
     }
 
-    //atualiza paciente
-    @PutMapping("{id}")
+    @PutMapping("/{id}")
     public PacienteEntity atualizaPaciente(@PathVariable Long id,
-                                           @RequestBody PacienteEntity pacienteAtualizado){
-        PacienteEntity paciente = pacienteRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("Nao foi possivel encontrar paciente com esse id"));
-
-        paciente.setCpf(pacienteAtualizado.getCpf());
-        paciente.setNome(pacienteAtualizado.getNome());
-        paciente.setEmail(pacienteAtualizado.getEmail());
-        paciente.setSenha(pacienteAtualizado.getSenha());
-
-        return pacienteRepository.save(paciente);
+                                           @RequestBody PacienteEntity pacienteAtualizado) {
+        return pacienteService.atualizaPaciente(id, pacienteAtualizado);
     }
 
-    //lista todos os pacientes
     @GetMapping
-    public List<PacienteEntity> listAllPacientes(){
-        return pacienteRepository.findAll();
+    public List<PacienteEntity> listAllPacientes() {
+        return pacienteService.listAllPacientes();
     }
 
-    //lista pacientes pelo id
-    @GetMapping("{id}")
-    public Optional<PacienteEntity> listaByIdPacientes(Long id){
-        return pacienteRepository.findById(id);
+    @GetMapping("/{id}")
+    public Optional<PacienteEntity> listaByIdPacientes(@PathVariable Long id) {
+        return pacienteService.listByIdPacientes(id);
     }
 
-    //deleta pacientes pelo id
-    @DeleteMapping("{id}")
-    public void deletarPacientes(@PathVariable Long id){
-        pacienteRepository.deleteById(id);
+    @DeleteMapping("/{id}")
+    public void deletarPacientes(@PathVariable Long id) {
+        pacienteService.deletarPaciente(id);
     }
 }

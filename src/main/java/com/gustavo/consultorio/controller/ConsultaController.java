@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/consultas")
@@ -24,7 +23,6 @@ public class ConsultaController {
     public ConsultaEntity atualizarConsulta(
             @PathVariable Long id,
             @RequestBody ConsultaEntity consultaAtualizada) {
-
         return consultaService.atualizarConsulta(id, consultaAtualizada);
     }
 
@@ -34,7 +32,7 @@ public class ConsultaController {
     }
 
     @GetMapping("/{id}")
-    public Optional<ConsultaEntity> buscarPorId(@PathVariable Long id) {
+    public ConsultaEntity buscarPorId(@PathVariable Long id) {
         return consultaService.buscarPorId(id);
     }
 

@@ -14,15 +14,13 @@ public class MedicoService {
     @Autowired
     private MedicoRepository medicoRepository;
 
-    //criar medico
     public MedicoEntity criarMedico(MedicoEntity medico) {
         return medicoRepository.save(medico);
     }
 
-    // atualiza medico
     public MedicoEntity atualizaMedico(Long id, MedicoEntity medicoAtualizado) {
         MedicoEntity medico = medicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("nao foi encontrado medico com esse id"));
+                .orElseThrow(() -> new RuntimeException("Medico nao encontrado"));
 
         medico.setCrm(medicoAtualizado.getCrm());
         medico.setCpf(medicoAtualizado.getCpf());
@@ -33,17 +31,14 @@ public class MedicoService {
         return medicoRepository.save(medico);
     }
 
-    //lista todos os medicos
     public List<MedicoEntity> listAllMedicos() {
         return medicoRepository.findAll();
     }
 
-    // lista medicos por id
     public Optional<MedicoEntity> listByIdMedicos(Long id) {
         return medicoRepository.findById(id);
     }
 
-    //deleta medicos por id
     public void deletaMedico(Long id) {
         medicoRepository.deleteById(id);
     }

@@ -1,7 +1,7 @@
 package com.gustavo.consultorio.controller;
 
 import com.gustavo.consultorio.entity.MedicoEntity;
-import com.gustavo.consultorio.repository.MedicoRepository;
+import com.gustavo.consultorio.service.MedicoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,51 +10,34 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/medicos")
-
 public class MedicoController {
-    @Autowired
-    private MedicoRepository medicoRepository;
 
-    //cria
+    @Autowired
+    private MedicoService medicoService;
+
     @PostMapping
     public MedicoEntity criarMedico(@RequestBody MedicoEntity novoMedico) {
-        return medicoRepository.save(novoMedico);
+        return medicoService.criarMedico(novoMedico);
     }
 
-
-    //atualiza
-    @PutMapping("{id}")
+    @PutMapping("/{id}")
     public MedicoEntity atualizarMedico(@PathVariable Long id,
                                         @RequestBody MedicoEntity medicoAtualizado) {
-        MedicoEntity medico = medicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nao encontramos medico com esse id"));
-
-        medico.setCrm(medicoAtualizado.getCrm());
-        medico.setCpf(medicoAtualizado.getCpf());
-        medico.setNome(medicoAtualizado.getNome());
-        medico.setEmail(medicoAtualizado.getEmail());
-        medico.setSenha(medicoAtualizado.getSenha());
-
-        return medicoRepository.save(medico);
+        return medicoService.atualizaMedico(id, medicoAtualizado);
     }
 
-    //lista todos os medicos
     @GetMapping
-    public List<MedicoEntity> listAllMedicos(){
-        return medicoRepository.findAll();
+    public List<MedicoEntity> listAllMedicos() {
+        return medicoService.listAllMedicos();
     }
 
-    //lista medicos por id
-    @GetMapping("{id}")
-    public Optional<MedicoEntity> listMedicosId(Long id){
-        return Optional.of(medicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("nao encontramos medico com esse id")));
+    @GetMapping("/{id}")
+    public Optional<MedicoEntity> listMedicosId(@PathVariable Long id) {
+        return medicoService.listByIdMedicos(id);
     }
 
-    //deleta medicos
-    @DeleteMapping("{id}")
-    public void deletaMedico(@PathVariable Long id){
-        medicoRepository.deleteById(id);
+    @DeleteMapping("/{id}")
+    public void deletaMedico(@PathVariable Long id) {
+        medicoService.deletaMedico(id);
     }
-
 }
