@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Consultório',
-  description: 'Sistema de gerenciamento de consultório médico',
+  description: 'Agendamento de consultas médicas',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

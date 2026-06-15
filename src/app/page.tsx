@@ -1,5 +1,5 @@
-import Dashboard from '@/components/Dashboard'
+import AgendamentoPage from '@/components/AgendamentoPage'
 
 export default function Home() {
-  return <Dashboard />
+  return <AgendamentoPage />
 }
