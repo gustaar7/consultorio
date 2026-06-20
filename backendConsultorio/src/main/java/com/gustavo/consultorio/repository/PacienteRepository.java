@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface PacienteRepository extends JpaRepository<PacienteEntity, Long> {
 	Optional<PacienteEntity> findByEmail(String email);
+	Optional<PacienteEntity> findByNomeIgnoreCase(String nome);
 }

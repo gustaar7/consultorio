@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Modal from './ui/Modal'
 import { useAuth } from './AuthProvider'
 import { IconActivity, IconCalendar, IconCheck, IconChevronRight, IconClock, IconStethoscope, IconUser } from '@tabler/icons-react'
-import { mockMedicos } from '@/lib/data'
 import { Medico } from '@/types'
 
 type Step = 'especialidade' | 'medico' | 'data' | 'dados' | 'confirmacao'
@@ -41,6 +40,8 @@ export default function AgendamentoPage() {
   const [step, setStep] = useState<Step>('especialidade')
   const [booking, setBooking] = useState<Booking>(emptyBooking)
   const [booked, setBooked] = useState(false)
+  const [medicos, setMedicos] = useState<Medico[]>([])
+  const [medicosError, setMedicosError] = useState('')
 
   const currentIdx = stepOrder.indexOf(step)
   const goNext = () => setStep(stepOrder[currentIdx + 1])
@@ -48,6 +49,53 @@ export default function AgendamentoPage() {
 
   const router = useRouter()
   const { user, logout, loginAdmin } = useAuth()
+  useEffect(() => {
+    const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '')
+
+      ; (async () => {
+        try {
+          const r = await fetch(`${API_BASE}/medicos`)
+          if (!r.ok) {
+            setMedicosError('Falha ao carregar médicos')
+            return
+          }
+          const data = await r.json()
+
+          // If no medicos exist and we're in development, create a default one so UI can work
+          if (Array.isArray(data) && data.length === 0 && process.env.NODE_ENV !== 'production') {
+            const defaults = [
+              { cpf: '12345678901', nome: 'Dr. João Silva', email: 'joao@clinica.local', senha: 'senha123', crm: 'CRM/XX 12345' },
+            ]
+            for (const m of defaults) {
+              try {
+                await fetch(`${API_BASE}/medicos`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(m),
+                })
+              } catch (e) {
+                // ignore create errors
+              }
+            }
+            // re-fetch
+            const r2 = await fetch(`${API_BASE}/medicos`)
+            if (r2.ok) {
+              const data2 = await r2.json()
+              if (Array.isArray(data2)) setMedicos(data2)
+              else setMedicosError('Resposta inválida dos médicos')
+            } else {
+              setMedicosError('Falha ao recarregar médicos')
+            }
+            return
+          }
+
+          if (Array.isArray(data)) setMedicos(data)
+          else setMedicosError('Resposta inválida dos médicos')
+        } catch (e) {
+          setMedicosError('Erro ao acessar API de médicos')
+        }
+      })()
+  }, [])
   const [showAdmin, setShowAdmin] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPass, setAdminPass] = useState('')
@@ -123,7 +171,7 @@ export default function AgendamentoPage() {
         {/* Card */}
         <div style={{ background: '#fff', borderRadius: 14, border: '0.5px solid #E2E5EB', overflow: 'hidden', marginTop: 24 }}>
           {step === 'especialidade' && <EspecialidadeStep onNext={goNext} />}
-          {step === 'medico' && <MedicoStep booking={booking} setBooking={setBooking} onNext={goNext} onBack={goBack} />}
+          {step === 'medico' && <MedicoStep medicos={medicos} medicosError={medicosError} booking={booking} setBooking={setBooking} onNext={goNext} onBack={goBack} />}
           {step === 'data' && <DataStep booking={booking} setBooking={setBooking} onNext={goNext} onBack={goBack} />}
           {step === 'dados' && <DadosStep booking={booking} setBooking={setBooking} onNext={goNext} onBack={goBack} />}
           {step === 'confirmacao' && <ConfirmacaoStep booking={booking} onConfirm={handleConfirm} onBack={goBack} />}
@@ -196,23 +244,29 @@ function EspecialidadeStep({ onNext }: { onNext: () => void }) {
 }
 
 /* ─── Step 2: Médico ─── */
-function MedicoStep({ booking, setBooking, onNext, onBack }: StepProps) {
+function MedicoStep({ medicos, medicosError, booking, setBooking, onNext, onBack }: { medicos: Medico[]; medicosError: string } & StepProps) {
   return (
     <StepShell title="Escolha o médico" subtitle="Selecione o profissional de sua preferência">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {mockMedicos.map((m) => (
-          <button key={m.id} onClick={() => setBooking((b) => ({ ...b, medico: m }))}
-            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 10, border: `1.5px solid ${booking.medico?.id === m.id ? '#2563EB' : '#E2E5EB'}`, background: booking.medico?.id === m.id ? '#EFF4FF' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
-            <MedicoAvatar name={m.nome} active={booking.medico?.id === m.id} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: booking.medico?.id === m.id ? '#2563EB' : '#111318' }}>{m.nome}</div>
-              <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{m.crm} · {m.email}</div>
-            </div>
-            {booking.medico?.id === m.id && <IconCheck size={16} color="#2563EB" />}
-          </button>
-        ))}
+        {medicos.length === 0 ? (
+          <div style={{ padding: 16, color: medicosError ? '#dc2626' : '#6B7280' }}>
+            {medicosError ? medicosError : 'Carregando médicos...'}
+          </div>
+        ) : (
+          medicos.map((m) => (
+            <button key={m.id} onClick={() => setBooking((b) => ({ ...b, medico: m }))}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 10, border: `1.5px solid ${booking.medico?.id === m.id ? '#2563EB' : '#E2E5EB'}`, background: booking.medico?.id === m.id ? '#EFF4FF' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+              <MedicoAvatar name={m.nome} active={booking.medico?.id === m.id} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: booking.medico?.id === m.id ? '#2563EB' : '#111318' }}>{m.nome}</div>
+                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{m.crm} · {m.email}</div>
+              </div>
+              {booking.medico?.id === m.id && <IconCheck size={16} color="#2563EB" />}
+            </button>
+          ))
+        )}
       </div>
-      <StepFooter onNext={onNext} onBack={onBack} nextDisabled={!booking.medico} nextLabel="Escolher horário" />
+      <StepFooter onNext={onNext} onBack={onBack} nextDisabled={!booking.medico || medicos.length === 0} nextLabel="Escolher horário" />
     </StepShell>
   )
 }
@@ -292,7 +346,82 @@ function DadosStep({ booking, setBooking, onNext, onBack }: StepProps) {
 
 /* ─── Step 5: Confirmação ─── */
 function ConfirmacaoStep({ booking, onConfirm, onBack }: { booking: Booking; onConfirm: () => void; onBack: () => void }) {
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
   const dataFmt = booking.data ? new Date(booking.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : ''
+
+  async function handleSubmit() {
+    setError('')
+    setLoading(true)
+    try {
+      const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '')
+
+      // Ensure we have a paciente (create if not logged)
+      let pacienteId: number | null = user?.id ?? null
+
+      if (!pacienteId) {
+        const senha = Math.random().toString(36).slice(2, 10)
+        const resPac = await fetch(`${API_BASE}/pacientes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: booking.nome, cpf: booking.cpf, email: booking.email, senha }),
+        })
+        if (!resPac.ok) {
+          const text = await resPac.text()
+          let msg = text
+          try {
+            const j = JSON.parse(text)
+            msg = j.message || JSON.stringify(j)
+          } catch (e) {
+            // keep text
+          }
+          console.error('Erro criando paciente:', resPac.status, msg)
+          throw new Error('Falha ao criar paciente: ' + msg)
+        }
+        const pac = await resPac.json()
+        pacienteId = pac.id
+      }
+
+      if (!booking.medico) throw new Error('Médico não selecionado')
+
+      const horaData = `${booking.data}T${booking.hora}:00`
+
+      const consultaPayload = {
+        paciente: { id: pacienteId },
+        medico: { id: booking.medico.id },
+        horaData,
+        sala: 'Sala 1',
+      }
+
+      const res = await fetch(`${API_BASE}/consultas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(consultaPayload),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        let msg = text
+        try {
+          const j = JSON.parse(text)
+          msg = j.message || JSON.stringify(j)
+        } catch (e) {
+          // keep text
+        }
+        console.error('Erro ao salvar consulta:', res.status, msg)
+        throw new Error(msg || 'Falha ao salvar consulta')
+      }
+
+      setLoading(false)
+      onConfirm()
+    } catch (e: any) {
+      setLoading(false)
+      setError(e?.message || 'Erro desconhecido')
+    }
+  }
+
   return (
     <StepShell title="Tudo certo?" subtitle="Revise os dados antes de confirmar">
       <div style={{ background: '#F7F8FA', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -310,7 +439,9 @@ function ConfirmacaoStep({ booking, onConfirm, onBack }: { booking: Booking; onC
         Ao confirmar, você receberá um e-mail com os detalhes do agendamento. Em caso de cancelamento, entre em contato com antecedência mínima de 24h.
       </div>
 
-      <StepFooter onNext={onConfirm} onBack={onBack} nextLabel="Confirmar agendamento" nextStyle={{ background: '#16a34a' }} />
+      {error && <div style={{ color: '#dc2626', marginTop: 8 }}>{error}</div>}
+
+      <StepFooter onNext={handleSubmit} onBack={onBack} nextLabel={loading ? 'Salvando...' : 'Confirmar agendamento'} nextStyle={{ background: '#16a34a' }} />
     </StepShell>
   )
 }

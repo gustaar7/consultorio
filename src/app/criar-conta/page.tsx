@@ -24,7 +24,7 @@ export default function CriarContaPage() {
             })
             if (!res.ok) throw new Error('Erro ao criar conta')
             setMessage('Conta criada com sucesso! Redirecionando...')
-            setTimeout(() => router.push('/agendar'), 900)
+            setTimeout(() => router.push('/agendar'), 200)
         } catch (err: any) {
             setMessage(err?.message || 'Erro ao criar conta')
         } finally {
